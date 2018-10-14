@@ -55,9 +55,10 @@ def get_titles_id(epi_name):
         filtered_2 = filtered_1.find("table", {"class": "findList"})
         extension = filtered_2.find("a", href=True)["href"].split('?')[0]
         return extension  # gives url of particular series IMDB page
-    except:
-        print("Either there is connectivity problem or the"
-              "Episode Names:- {} is wrong", epi_name)
+    except Exception as e:
+        #  print(e)
+        print("Either there is connectivity problem or the "
+              "Episode Names:- {} is wrong".format(epi_name))
         return "Fault"
 
 
@@ -74,7 +75,8 @@ def get_main_page(epi_name):
             # stores elements required in further functions
             elements = [soup_main, extension]
             return elements
-        except:
+        except Exception as e:
+            #  print(e)
             print("There is connectivity problem, Please Try Again")
             return 'Fault'
 
@@ -89,7 +91,8 @@ def series_has_ended(epi_name):
             soup_main = elements[0]
             filtered = soup_main.find("meta",  property="og:title")
             num = filtered['content'].find('–')
-        except:
+        except Exception as e:
+            #  print(e)
             return 'Fault'
         # returns true if the series has ended
         if filtered['content'][num+1].isdigit():
@@ -117,7 +120,8 @@ def next_season(elements):
         a = epi_data[0].find("div", {'class': 'airdate'})
         # returns the date
         return a.text.strip()
-    except:
+    except Exception as e:
+        #  print(e)
         return None
 
 
@@ -132,7 +136,8 @@ def next_episode(elements):
         epi_data = soup_main.find_all(
             "div", {'class': 'info', 'itemprop': "episodes"})
         date = epi_data[epi_no-1].find("div", {'class': 'airdate'})
-    except:
+    except Exception as e:
+        #  print(e)
         return "Fault"
     if len(date.text.strip()) > 0:
         present = datetime.now()
@@ -149,7 +154,8 @@ def next_episode(elements):
                                           'id': "episodes_content"})
             date = epi_data[0].find("h3", {'id': "nextEpisode"}).find("span")
             return date.text[5:-1].strip()
-        except:
+        except Exception as e:
+            #  print(e)
             return False
 
     return False
@@ -219,7 +225,9 @@ def process_email(message_content, receiver_add):
         print("mail send to ", receiver_add)
         del msg
         s.quit()
-    except:
+        print("email successfully send to {}".format(receiver_add))
+    except Exception as e:
+        #  print(e)
         print("Either the senders mail address or"
               " the password entered is wrong. Also check internet connection")
 
@@ -228,14 +236,20 @@ def process_email(message_content, receiver_add):
 def creating_database():
     # to ignore warnings given by MySQLdb
     filterwarnings('ignore', category=MySQLdb.Warning)
-    conn = MySQLdb.connect(host="localhost", user=args.user,
-                           password=args.passw)
-    cursor = conn.cursor()
-    cursor.execute('CREATE DATABASE IF NOT EXISTS IMDB')
-    cursor.execute('USE IMDB')
-    cursor.execute("CREATE TABLE IF NOT EXISTS SeriesList(Email_ADD "
-                   "VARCHAR(100)NOT NULL UNIQUE, TvSeries VARCHAR(255))")
-    return cursor, conn
+    try:
+        conn = MySQLdb.connect(host="localhost", user=args.user,
+                               password=args.passw)
+        cursor = conn.cursor()
+        cursor.execute('CREATE DATABASE IF NOT EXISTS IMDB')
+        cursor.execute('USE IMDB')
+        cursor.execute("CREATE TABLE IF NOT EXISTS SeriesList(Email_ADD "
+                       "VARCHAR(100)NOT NULL UNIQUE, TvSeries VARCHAR(255))")
+        return cursor, conn
+    except Exception as e:
+        #  print(e)
+        print("could not connect to the database. Please "
+              "chech Password/username")
+        exit()
 
 
 # Dumbs all data in the Database
@@ -260,7 +274,8 @@ def process_inputs():
                     val = (email_add, tvseries)
                     cursor.execute(sql, val)
                     conn.commit()
-                except:
+                except Exception as e:
+                    #  print(e)
                     print("Problem with the database")
             else:
                 pass
@@ -284,10 +299,11 @@ def send_email(email_addresses, cursor):
             data = cursor.fetchone()
             message_content = scrapping_imdb(data[1])
             process_email(message_content, add)
-        except:
+        except Exception as e:
+            #  print(e)
             print("could not send email to {}", add)
     cursor.close()
-    print("emails send")
+
 
 
 # to update TvShows list
